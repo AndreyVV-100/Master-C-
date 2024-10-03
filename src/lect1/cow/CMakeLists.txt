@@ -1,3 +1,3 @@
-add_executable(cow
+add_executable(lect1-cow
     Cow.cpp
 )
