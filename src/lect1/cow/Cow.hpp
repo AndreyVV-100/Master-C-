@@ -43,6 +43,14 @@ private:
             delete[] data_;
         }
 
+        void realloc(size_type newCapacity) {
+            auto *newPtr = new CharT[newCapacity];
+            std::copy(begin(), end(), newPtr);
+            delete [] data_;
+            data_ = newPtr;
+            capacity_ = newCapacity;
+        }
+
     public:
         ControlBlock& operator=(const ControlBlock&) = delete;
         ControlBlock(ControlBlock&&) = delete;
@@ -89,6 +97,14 @@ private:
         iterator end() {
             return data_ + size_;
         }
+        
+        const_iterator begin() const {
+            return data_;
+        }
+
+        const_iterator end() const {
+            return data_ + size_;
+        }
 
         const_iterator cbegin() const {
             return data_;
@@ -132,13 +148,38 @@ private:
 
         size_type findSubstr(string_view str, size_type pos) const {
             auto strSize = str.size();
-            auto strBegin = str.begin(), strEnd = str.end();
-            for (auto it : *this) {
-                auto [strIt, myIt] = std::mismatch(strBegin, strEnd, it);
+            auto strBegin = str.begin(), strEnd = str.end(), myEnd = end();
+            for (auto it = begin(); it != myEnd; ++it) {
+                auto [strIt, myIt] = std::mismatch(strBegin, strEnd, it, myEnd);
                 if (strIt == strEnd)
                     return std::distance(begin(), it);
             }
             return npos;
+        }
+
+        void pushBack(CharT ch) {
+            if (size_ == capacity_)
+                realloc(capacity_ + defaultCapacity);
+            data_[size_++] = ch;
+        }
+
+        CharT popBack() {
+            return data_[--size_];
+        }
+
+        void append(const BasicString &str) {
+            if (size_ + str.size() >= capacity_)
+                realloc(capacity_ + std::max(str.size(), defaultCapacity));
+            std::copy(str.cbegin(), str.cend(), end());
+            size_ += str.size();
+        }
+
+        size_type size() const {
+            return size_;
+        }
+
+        void print(std::basic_ostream<CharT> &os) const {
+            os.write(data_, size_);
         }
 
     private:
@@ -203,6 +244,14 @@ public:
         return storage_->end();
     }
 
+    const_iterator begin() const {
+        return storage_->cbegin();
+    }
+
+    const_iterator end() const {
+        return storage_->cend();
+    }
+
     const_iterator cbegin() const {
         return storage_->cbegin();
     }
@@ -239,9 +288,34 @@ public:
         return storage_->findSubstr(str, pos);
     }
 
+    void pushBack(CharT ch) {
+        cloneBlockIfNeeded();
+        storage_->pushBack(ch);
+    }
+
+    BasicString& operator+=(const BasicString& str) {
+        cloneBlockIfNeeded();
+        storage_->append(str);
+        return *this;
+    }
+
+    size_type size() const {
+        return storage_->size();
+    }
+
+    void print(std::basic_ostream<CharT>& os) const {
+        storage_->print(os);
+    }
+
 private:
     ControlBlock* storage_;
 };
+
+template <typename CharT>
+std::basic_ostream<CharT>& operator<<(std::basic_ostream<CharT> &os, const BasicString<CharT> &str) {
+    str.print(os);
+    return os;
+}
 
 template <typename StringT>
 class BasicTokenizer {
