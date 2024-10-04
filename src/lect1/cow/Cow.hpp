@@ -178,6 +178,12 @@ private:
             return size_;
         }
 
+        void resize(size_type size) {
+            if(size > capacity_)
+                realloc(capacity_ + std::max(size, defaultCapacity));
+            size_ = size;
+        }
+
         void print(std::basic_ostream<CharT> &os) const {
             os.write(data_, size_);
         }
@@ -237,10 +243,12 @@ public:
     }
 
     iterator begin() {
+        cloneBlockIfNeeded();
         return storage_->begin();
     }
 
     iterator end() {
+        cloneBlockIfNeeded();
         return storage_->end();
     }
 
@@ -261,10 +269,12 @@ public:
     }
 
     reverse_iterator rbegin() {
+        cloneBlockIfNeeded();
         return storage_->rbegin();
     }
 
     reverse_iterator rend() {
+        cloneBlockIfNeeded();
         return storage_->rend();
     }
 
@@ -301,6 +311,9 @@ public:
 
     size_type size() const {
         return storage_->size();
+    }
+    void resize(size_type size) {
+        storage_->resize(size);
     }
 
     void print(std::basic_ostream<CharT>& os) const {
